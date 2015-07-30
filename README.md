@@ -19,9 +19,9 @@ It uses the Lepton Thermal Camera Breakout v1.3 from PURE Engineering (http://ww
 # Versions
 
 -v1.0: First working version, displays the image on the screen
+-v1.1: Improved color representation using 5 colors (Black-Blue-Yellow-Red-White) instead of 3 (Blue-Yellow-Red)
 
 # Future work
 
 -Implement touch screen to select measurement points
--Improve the color representation
 -Implement SD card and file system to save images

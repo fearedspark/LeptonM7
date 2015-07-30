@@ -65,9 +65,6 @@ FMC_SDRAM_CommandTypeDef command;
 uint32_t * Display_layer0_buffer0 = (uint32_t *) DISPLAY_LAYER0_BUFFER0_ADDR;
 uint32_t * Display_layer0_buffer1 = (uint32_t *) DISPLAY_LAYER0_BUFFER1_ADDR;
 uint32_t * Display_layer1 = (uint32_t *) DISPLAY_LAYER1_ADDR;
-
-uint16_t histogram[16384];
-float cumulative_histogram[16384];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,8 +90,7 @@ static void SDRAM_Init(void);
 void ArrayMaxMin(uint16_t * LeptonBuffer, uint16_t * min, uint16_t * max);
 void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID);
 uint32_t gradient(float percent);
-uint32_t linear_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2);
-//void generate_histogram(uint8_t LeptonBufferID);
+uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2);
 /* USER CODE END 0 */
 
 int main(void)
@@ -102,7 +98,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int x, y;
-  uint16_t dummy = 0x55AA;
+  uint16_t dummy = 0x00;
   uint8_t current_buffer = 0, next_buffer = 1;
   /* USER CODE END 1 */
 
@@ -137,10 +133,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LEPTON_CS_HIGH();
   while(HAL_SPI_Transmit(&hspi2, (uint8_t *)&dummy, 1, 0xFFFFFFFF) != HAL_OK);
-  for(x = 0; x < 16384; x++)
-  {
-      histogram[x] = 0;
-  }
   for(y = 0; y < 240*320; y++)
       Display_layer0_buffer0[y] = Display_layer0_buffer1[y] = 0;
   for(y = 0; y < 272*480; y++)
@@ -168,38 +160,26 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-    Display_layer1[0]++;
-    Display_layer1[0] |= 0xFF000000;
     if(BufferStatus[0] == BUFFER_RDY_DISP)
     {
-        Display_layer1[1]++;
-        Display_layer1[1] |= 0xFF000000;
         BufferStatus[0] = BUFFER_BUSY_DISP;
-        //generate_histogram(0);
         GenerateDisplayBuffer(0, next_buffer);
         if(next_buffer == 0)
             HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
-            //hltdc.LayerCfg[0].FBStartAdress = (uint32_t) Display_layer0_buffer0;
         else
             HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
-            //hltdc.LayerCfg[0].FBStartAdress = (uint32_t) Display_layer0_buffer1;
         BufferStatus[0] = BUFFER_FREE;
         current_buffer = next_buffer;
         next_buffer = (current_buffer + 1) % 2;
     }
     else if(BufferStatus[1] == BUFFER_RDY_DISP)
     {
-        Display_layer1[1]++;
-        Display_layer1[1] |= 0xFF000000;
         BufferStatus[1] = BUFFER_BUSY_DISP;
-        //generate_histogram(1);
         GenerateDisplayBuffer(1, next_buffer);
         if(next_buffer == 0)
             HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
-            //hltdc.LayerCfg[0].FBStartAdress = (uint32_t) Display_layer0_buffer0;
         else
             HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
-            //hltdc.LayerCfg[0].FBStartAdress = (uint32_t) Display_layer0_buffer1;
         BufferStatus[1] = BUFFER_FREE;
         current_buffer = next_buffer;
         next_buffer = (current_buffer + 1) % 2;
@@ -1024,39 +1004,55 @@ void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID)
 
 uint32_t gradient(float percent)
 {
-    float weight = (cos(((float)percent * 2.0 - 1.0) * PI) + 1.0) / 2.0;
+    /*
     if(percent < 0.0f)
         percent = 0.0f;
     if(percent > 1.0f)
         percent = 1.0f;
     if(percent < 0.5f)
-        return linear_gradient(weight, 0, 0, 255, 255, 255, 0);
+        return two_colors_gradient(percent * 2, 0, 0, 255, 255, 255, 0);
     else
-        return linear_gradient(weight, 255, 0, 0, 255, 255, 0);
+        return two_colors_gradient((percent-0.5f) * 2, 255, 0, 0, 255, 255, 0);*/
+    if(percent < 0.0f)
+        percent = 0.0f;
+    if(percent > 1.0f)
+        percent = 1.0f;
+    if(percent < 0.5f)
+    {
+        if(percent < 0.25f)
+        {
+            //Black to blue
+            return two_colors_gradient(percent * 4, 0, 0, 0, 0, 0, 255);
+        }
+        else
+        {
+            //Blue to yellow
+            return two_colors_gradient((percent * 4) - 1, 0, 0, 255, 255, 255, 0);
+        }
+    }
+    else
+    {
+        if(percent < 0.75f)
+        {
+            //Yellow to red
+            return two_colors_gradient((percent * 4) - 2, 255, 255, 0, 255, 0, 0);
+        }
+        else
+        {
+            //Red to white
+            return two_colors_gradient((percent * 4) - 3, 255, 0, 0, 255, 255, 255);
+        }
+    }
 }
 
-uint32_t linear_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2)
+uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2)
 {
+    float weigthed_percent = (cos(((float)percent - 1.0f) * PI) + 1.0f) / 2.0f;
     return RGB(255,
-        (uint8_t)(MIN(r_1, r_2) + ABS((float)r_1 - (float)r_2) * (r_1 > r_2 ? 1.0f-percent : percent)),
-        (uint8_t)(MIN(g_1, g_2) + ABS((float)g_1 - (float)g_2) * (g_1 > g_2 ? 1.0f-percent : percent)),
-        (uint8_t)(MIN(b_1, b_2) + ABS((float)b_1 - (float)b_2) * (b_1 > b_2 ? 1.0f-percent : percent)));
+        (uint8_t)(MIN(r_1, r_2) + ABS((float)r_1 - (float)r_2) * (r_1 > r_2 ? 1.0f-weigthed_percent : weigthed_percent)),
+        (uint8_t)(MIN(g_1, g_2) + ABS((float)g_1 - (float)g_2) * (g_1 > g_2 ? 1.0f-weigthed_percent : weigthed_percent)),
+        (uint8_t)(MIN(b_1, b_2) + ABS((float)b_1 - (float)b_2) * (b_1 > b_2 ? 1.0f-weigthed_percent : weigthed_percent)));
 }
-
-/*void generate_histogram(uint8_t LeptonBufferID)
-{
-    uint32_t i;
-    float cumul = 0;
-    for(i = 0; i < 80*60; i++)
-    {
-        histogram[LeptonBuffer[LeptonBufferID][i]]++;
-    }
-    for(i = 0; i < 16384; i++)
-    {
-        cumul += ((float)histogram[i])/4800.0f;
-        cumulative_histogram[i] = cumul;
-    }
-}*/
 /* USER CODE END 4 */
 
 #ifdef USE_FULL_ASSERT
