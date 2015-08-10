@@ -6,6 +6,8 @@
 #include "main.h"
 #include "lepton.h"
 #include "functions.h"
+#include "fonts.h"
+#include "touch.h"
 
 #define PI 3.14159265
 #define RGB(a,r,g,b) ((((uint32_t)a&0xFF)<<24) | (((uint32_t)r&0xFF)<<16) | (((uint32_t)g&0xFF)<<8) | ((uint32_t)b&0xFF))
@@ -16,10 +18,13 @@
 #define DISPLAY_LAYER0_BUFFER0_ADDR 0xC0000000
 #define DISPLAY_LAYER0_BUFFER1_ADDR 0xC0080000
 #define DISPLAY_LAYER1_ADDR 0xC0100000
+//#define DISPLAY_LAYER1_BUFFER1_ADDR 0xC0180000
 
 extern uint32_t * Display_layer0_buffer0;
 extern uint32_t * Display_layer0_buffer1;
 extern uint32_t * Display_layer1;
+
+extern uint8_t request_cam_sync;
 
 #define TFT_LCD_EN() GPIOI->BSRR = 0x00001000
 #define TFT_LCD_DIS() GPIOI->BSRR = 0x10000000

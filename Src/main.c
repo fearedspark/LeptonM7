@@ -65,6 +65,10 @@ FMC_SDRAM_CommandTypeDef command;
 uint32_t * Display_layer0_buffer0 = (uint32_t *) DISPLAY_LAYER0_BUFFER0_ADDR;
 uint32_t * Display_layer0_buffer1 = (uint32_t *) DISPLAY_LAYER0_BUFFER1_ADDR;
 uint32_t * Display_layer1 = (uint32_t *) DISPLAY_LAYER1_ADDR;
+
+uint32_t * Button_Layout = (uint32_t *) 0xC0200000;
+
+uint8_t request_cam_sync = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,6 +95,7 @@ void ArrayMaxMin(uint16_t * LeptonBuffer, uint16_t * min, uint16_t * max);
 void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID);
 uint32_t gradient(float percent);
 uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2);
+void drawButton(int x, int y);
 /* USER CODE END 0 */
 
 int main(void)
@@ -98,8 +103,10 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int x, y;
+  uint8_t test_var;
   uint16_t dummy = 0x00;
   uint8_t current_buffer = 0, next_buffer = 1;
+  uint32_t tmp_color;
   /* USER CODE END 1 */
 
   /* Enable I-Cache-------------------------------------------------------------*/
@@ -142,15 +149,42 @@ int main(void)
   for(y = 0; y < 60; y++)
       for(x = 0; x < 80; x++)
           LeptonBuffer[0][y*80 + x] = LeptonBuffer[1][y*80 + x] = 0;
+  initTextBuffer(Display_layer1, 480, 272, 0, 0, Arial12x12, 0xFFFFFFFF, 0xFF000000);
+  for(x = 0; x < 322; x++)
+    Display_layer1[15*480+x+79] = Display_layer1[256*480+x+79] = 0xFF7F7F7F;
+  for(y = 0; y < 240; y++)
+    Display_layer1[(y+16)*480+79] = Display_layer1[(y+16)*480+400] = 0xFF7F7F7F;
+  for(y = 0; y < 240; y++)
+  {
+      tmp_color = gradient(1.0f-y/240.0f);
+      for(x = 2; x < 18; x++)
+          Display_layer1[(y+16)*480+x] = tmp_color;
+      Display_layer1[(y+16)*480+1] = 0xFF7F7F7F;
+      Display_layer1[(y+16)*480+18] = 0xFF7F7F7F;
+  }
+  for(x = 2; x < 21; x++)
+  {
+      Display_layer1[16*480+x] =  0xFFFFFFFF;//White level
+      Display_layer1[76*480+x] =  0xFFFFFFFF;//Red level
+      Display_layer1[136*480+x] = 0xFFFFFFFF;//Yellow level
+      Display_layer1[196*480+x] = 0xFFFFFFFF;//Blue Level
+      Display_layer1[255*480+x] = 0xFFFFFFFF;//Black level
+  }
+  for(y = 0; y < 32; y++)
+  {
+      tmp_color = two_colors_gradient(y/32.0f, 0xDF, 0xDF, 0xDF, 0x9F, 0x9F, 0x9F);
+      for(x = 0; x < 64; x++)
+      {
+          Button_Layout[y*64+x] = tmp_color;
+      }
+  }
+  //wait_ms(200);
   
   LeptonSync();
   LEPTON_CS_LOW();
   while(HAL_SPI_Receive_DMA(&hspi2, (uint8_t *) Lepton_VoSPI, 164) != HAL_OK);
-
-  for(x = 0; x < 322; x++)
-    Display_layer1[15*480+x+79] = Display_layer1[256*480+x+79] = 0xFFFFFFFF;
-  for(y = 0; y < 240; y++)
-    Display_layer1[(y+16)*480+79] = Display_layer1[(y+16)*480+400] = 0xFFFFFFFF;
+  //for(x = 0; x < 5; x++)
+  //  drawButton(410, 24+48*x);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -160,6 +194,13 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+      
+    /*HAL_I2C_Mem_Read(&hi2c3, TOUCH_I2C_ADDR, TOUCH_REG_STATUS, 1, &test_var, 1, 0xFFFF);
+    printf("\r0x%02X", test_var);
+      
+    HAL_I2C_Mem_Read(&hi2c3, TOUCH_I2C_ADDR, TOUCH_REG_T0_WEIGHT, 1, &test_var, 1, 0xFFFF);
+    printf(" 0x%02X ", test_var);*/
+      
     if(BufferStatus[0] == BUFFER_RDY_DISP)
     {
         BufferStatus[0] = BUFFER_BUSY_DISP;
@@ -267,8 +308,8 @@ void MX_DMA2D_Init(void)
   hdma2d.Init.OutputOffset = 0;
   hdma2d.LayerCfg[1].InputOffset = 0;
   hdma2d.LayerCfg[1].InputColorMode = CM_ARGB8888;
-  hdma2d.LayerCfg[1].AlphaMode = DMA2D_COMBINE_ALPHA;
-  hdma2d.LayerCfg[1].InputAlpha = 0;
+  hdma2d.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
+  hdma2d.LayerCfg[1].InputAlpha = 0xFF;
   HAL_DMA2D_Init(&hdma2d);
 
   HAL_DMA2D_ConfigLayer(&hdma2d, 1);
@@ -452,9 +493,9 @@ void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 4, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
-  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 
 }
@@ -777,6 +818,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
   HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PI11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PA8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -891,6 +938,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF9_TIM12;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -970,15 +1021,16 @@ void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID)
 {
     int x, y;
     uint16_t l_min, l_max;
+    float range;
     uint32_t color;
     uint32_t * DisplayBuffer = (DisplayBufferID == 0)?Display_layer0_buffer0:Display_layer0_buffer1;
     ArrayMaxMin(LeptonBuffer[LeptonBufferID], &l_min, &l_max);
-    l_max >>= 3;
+    range = l_max-l_min;
     for(y = 0; y < 60; y++)
     {
         for(x = 0; x < 80; x++)
         {
-            color = gradient(((float)(LeptonBuffer[LeptonBufferID][y*80+x]-l_min))/((float)(l_max)));
+            color = gradient(((float)(LeptonBuffer[LeptonBufferID][y*80+x]-l_min))/range);
             DisplayBuffer[(y*4)*320 + (x*4)] = color;
             DisplayBuffer[(y*4)*320 + (x*4)+1] = color;
             DisplayBuffer[(y*4)*320 + (x*4)+2] = color;
@@ -1004,15 +1056,6 @@ void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID)
 
 uint32_t gradient(float percent)
 {
-    /*
-    if(percent < 0.0f)
-        percent = 0.0f;
-    if(percent > 1.0f)
-        percent = 1.0f;
-    if(percent < 0.5f)
-        return two_colors_gradient(percent * 2, 0, 0, 255, 255, 255, 0);
-    else
-        return two_colors_gradient((percent-0.5f) * 2, 255, 0, 0, 255, 255, 0);*/
     if(percent < 0.0f)
         percent = 0.0f;
     if(percent > 1.0f)
@@ -1027,7 +1070,10 @@ uint32_t gradient(float percent)
         else
         {
             //Blue to yellow
-            return two_colors_gradient((percent * 4) - 1, 0, 0, 255, 255, 255, 0);
+            if(percent < 0.375)
+                return two_colors_gradient((percent - 0.25f) * 8, 0, 0, 255, 0, 255, 0);
+            else
+                return two_colors_gradient((percent - 0.375f) * 8, 0, 255, 0, 255, 255, 0);
         }
     }
     else
@@ -1052,6 +1098,26 @@ uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_
         (uint8_t)(MIN(r_1, r_2) + ABS((float)r_1 - (float)r_2) * (r_1 > r_2 ? 1.0f-weigthed_percent : weigthed_percent)),
         (uint8_t)(MIN(g_1, g_2) + ABS((float)g_1 - (float)g_2) * (g_1 > g_2 ? 1.0f-weigthed_percent : weigthed_percent)),
         (uint8_t)(MIN(b_1, b_2) + ABS((float)b_1 - (float)b_2) * (b_1 > b_2 ? 1.0f-weigthed_percent : weigthed_percent)));
+}
+
+void drawButton(int x, int y)
+{
+    while(DMA2D->CR & 0x00000001);
+    DMA2D->FGMAR = (uint32_t) Button_Layout;
+    DMA2D->FGOR = 0;
+    DMA2D->FGPFCCR = 0xFF000000;
+    DMA2D->OPFCCR = 0x00000000;
+    DMA2D->OMAR = ((uint32_t) Display_layer1) + (y * 480 + x) * 4;
+    DMA2D->OOR = 480-64;
+    DMA2D->NLR = 64 << 16 | 32;
+    DMA2D->CR |= 1;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if(GPIO_Pin == GPIO_PIN_11)
+    {
+    }
 }
 /* USER CODE END 4 */
 

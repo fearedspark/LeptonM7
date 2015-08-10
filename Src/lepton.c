@@ -15,34 +15,44 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     if(hspi->Instance == SPI2)
     {
         LEPTON_CS_HIGH();
-        line = __REV16(Lepton_VoSPI[0]) & 0x0FFF;
-        if(line < 60)
+        if(request_cam_sync != 0)
         {
-            if((current_lepton_buffer < 0) && (line == 0))
+            line = __REV16(Lepton_VoSPI[0]) & 0x0FFF;
+            if(line < 60)
             {
-                if(BufferStatus[0] == BUFFER_FREE)
+                if((current_lepton_buffer < 0) && (line == 0))
                 {
-                    current_lepton_buffer = 0;
-                    BufferStatus[0] = BUFFER_BUSY_LEPTON;
+                    if(BufferStatus[0] == BUFFER_FREE)
+                    {
+                        current_lepton_buffer = 0;
+                        BufferStatus[0] = BUFFER_BUSY_LEPTON;
+                    }
+                    else if(BufferStatus[1] == BUFFER_FREE)
+                    {
+                        current_lepton_buffer = 1;
+                        BufferStatus[1] = BUFFER_BUSY_LEPTON;
+                    }
                 }
-                else if(BufferStatus[1] == BUFFER_FREE)
+                if(current_lepton_buffer >= 0)
                 {
-                    current_lepton_buffer = 1;
-                    BufferStatus[1] = BUFFER_BUSY_LEPTON;
+                    for(i = 0; i < 80; i++)
+                    {
+                        LeptonBuffer[current_lepton_buffer][line*80 + i] = __REV16(Lepton_VoSPI[i + 2]);
+                    }
+                    if(line == 59)
+                    {
+                        BufferStatus[current_lepton_buffer] = BUFFER_RDY_DISP;
+                        current_lepton_buffer = -1;
+                    }
                 }
             }
+        }
+        else
+        {
             if(current_lepton_buffer >= 0)
-            {
-                for(i = 0; i < 80; i++)
-                {
-                    LeptonBuffer[current_lepton_buffer][line*80 + i] = __REV16(Lepton_VoSPI[i + 2]);
-                }
-                if(line == 59)
-                {
-                    BufferStatus[current_lepton_buffer] = BUFFER_RDY_DISP;
-                    current_lepton_buffer = -1;
-                }
-            }
+                BufferStatus[current_lepton_buffer] = BUFFER_FREE;
+            LeptonSync();
+            request_cam_sync = 0;
         }
         LEPTON_CS_LOW();
         while(HAL_SPI_Receive_DMA(hspi, (uint8_t *) Lepton_VoSPI, 164) != HAL_OK);

@@ -21,4 +21,6 @@ extern BufferStatusCodes BufferStatus[2];
 
 void LeptonSync(void);
 
+#define LEPTON_I2C_ADDR 0x2A
+
 #endif
