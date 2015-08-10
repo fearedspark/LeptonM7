@@ -67,8 +67,6 @@ uint32_t * Display_layer0_buffer1 = (uint32_t *) DISPLAY_LAYER0_BUFFER1_ADDR;
 uint32_t * Display_layer1 = (uint32_t *) DISPLAY_LAYER1_ADDR;
 
 uint32_t * Button_Layout = (uint32_t *) 0xC0200000;
-
-uint8_t request_cam_sync = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1111,13 +1109,6 @@ void drawButton(int x, int y)
     DMA2D->OOR = 480-64;
     DMA2D->NLR = 64 << 16 | 32;
     DMA2D->CR |= 1;
-}
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    if(GPIO_Pin == GPIO_PIN_11)
-    {
-    }
 }
 /* USER CODE END 4 */
 

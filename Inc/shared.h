@@ -24,8 +24,6 @@ extern uint32_t * Display_layer0_buffer0;
 extern uint32_t * Display_layer0_buffer1;
 extern uint32_t * Display_layer1;
 
-extern uint8_t request_cam_sync;
-
 #define TFT_LCD_EN() GPIOI->BSRR = 0x00001000
 #define TFT_LCD_DIS() GPIOI->BSRR = 0x10000000
 #define TFT_BL_ON() GPIOK->BSRR = 0x00000008
