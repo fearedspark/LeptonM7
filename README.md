@@ -7,6 +7,8 @@ Lepton interface for the STM32F746G-DISCO board
 This project uses the STM32F746G-DISCO to acquire the thermal images from a FLIR Lepton module and displays it on the screen.
 It uses the Lepton Thermal Camera Breakout v1.3 from PURE Engineering (http://www.pureengineering.com/projects/lepton)
 
+A prototype enclosure is also provided, in STL format, for 3D printing.
+
 # Pin mapping:
 
 - CS:	"D10" - PA8
