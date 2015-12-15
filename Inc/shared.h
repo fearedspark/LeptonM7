@@ -15,13 +15,12 @@
 #define MAX(x,y) ((x<y)?y:x)
 #define ABS(x) ((x<0)?(-x):x)
 
-#define DISPLAY_LAYER0_BUFFER0_ADDR 0xC0000000
-#define DISPLAY_LAYER0_BUFFER1_ADDR 0xC0080000
+#define DISPLAY_LAYER0_ADDR 0xC0000000
+//#define DISPLAY_LAYER0_BUFFER1_ADDR 0xC0080000
 #define DISPLAY_LAYER1_ADDR 0xC0100000
 //#define DISPLAY_LAYER1_BUFFER1_ADDR 0xC0180000
 
-extern uint32_t * Display_layer0_buffer0;
-extern uint32_t * Display_layer0_buffer1;
+extern uint32_t * Display_layer0;
 extern uint32_t * Display_layer1;
 
 #define TFT_LCD_EN() GPIOI->BSRR = 0x00001000

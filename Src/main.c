@@ -62,11 +62,10 @@ SDRAM_HandleTypeDef hsdram1;
 /* Private variables ---------------------------------------------------------*/
 FMC_SDRAM_CommandTypeDef command;
 
-uint32_t * Display_layer0_buffer0 = (uint32_t *) DISPLAY_LAYER0_BUFFER0_ADDR;
-uint32_t * Display_layer0_buffer1 = (uint32_t *) DISPLAY_LAYER0_BUFFER1_ADDR;
+uint32_t * Display_layer0 = (uint32_t *) DISPLAY_LAYER0_ADDR;
 uint32_t * Display_layer1 = (uint32_t *) DISPLAY_LAYER1_ADDR;
 
-uint32_t * Button_Layout = (uint32_t *) 0xC0200000;
+//uint32_t * Button_Layout = (uint32_t *) 0xC0200000;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,7 +92,7 @@ void ArrayMaxMin(uint16_t * LeptonBuffer, uint16_t * min, uint16_t * max);
 void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID);
 uint32_t gradient(float percent);
 uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2);
-void drawButton(int x, int y);
+//void drawButton(int x, int y);
 /* USER CODE END 0 */
 
 int main(void)
@@ -101,7 +100,6 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int x, y;
-  uint8_t test_var;
   uint16_t dummy = 0x00;
   uint8_t current_buffer = 0, next_buffer = 1;
   uint32_t tmp_color;
@@ -138,49 +136,52 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LEPTON_CS_HIGH();
   while(HAL_SPI_Transmit(&hspi2, (uint8_t *)&dummy, 1, 0xFFFFFFFF) != HAL_OK);
-  for(y = 0; y < 240*320; y++)
-      Display_layer0_buffer0[y] = Display_layer0_buffer1[y] = 0;
+//  for(y = 0; y < 240*320; y++)
+//      Display_layer0_buffer0[y] = Display_layer0_buffer1[y] = 0;
   for(y = 0; y < 272*480; y++)
-      Display_layer1[y] = 0;
+      Display_layer0[y] = Display_layer1[y] = 0;
   TFT_LCD_EN();
   TFT_BL_ON();
   for(y = 0; y < 60; y++)
       for(x = 0; x < 80; x++)
           LeptonBuffer[0][y*80 + x] = LeptonBuffer[1][y*80 + x] = 0;
-  initTextBuffer(Display_layer1, 480, 272, 0, 0, Arial12x12, 0xFFFFFFFF, 0xFF000000);
+  initTextBuffer(Display_layer0, 480, 272, 0, 0, Arial12x12, 0xFFFFFFFF, 0xFF000000);
   for(x = 0; x < 322; x++)
-    Display_layer1[15*480+x+79] = Display_layer1[256*480+x+79] = 0xFF7F7F7F;
+    Display_layer0[15*480+x+79] = Display_layer0[256*480+x+79] = Display_layer1[15*480+x+79] = Display_layer1[256*480+x+79] = 0xFF7F7F7F;
   for(y = 0; y < 240; y++)
-    Display_layer1[(y+16)*480+79] = Display_layer1[(y+16)*480+400] = 0xFF7F7F7F;
+    Display_layer0[(y+16)*480+79] = Display_layer0[(y+16)*480+400] = Display_layer1[(y+16)*480+79] = Display_layer1[(y+16)*480+400] = 0xFF7F7F7F;
   for(y = 0; y < 240; y++)
   {
       tmp_color = gradient(1.0f-y/240.0f);
       for(x = 2; x < 18; x++)
-          Display_layer1[(y+16)*480+x] = tmp_color;
-      Display_layer1[(y+16)*480+1] = 0xFF7F7F7F;
-      Display_layer1[(y+16)*480+18] = 0xFF7F7F7F;
+          Display_layer0[(y+16)*480+x] = Display_layer1[(y+16)*480+x] = tmp_color;
+      Display_layer0[(y+16)*480+1] = Display_layer1[(y+16)*480+1] = 0xFF7F7F7F;
+      Display_layer0[(y+16)*480+18] = Display_layer1[(y+16)*480+18] = 0xFF7F7F7F;
   }
   for(x = 2; x < 21; x++)
   {
-      Display_layer1[16*480+x] =  0xFFFFFFFF;//White level
-      Display_layer1[76*480+x] =  0xFFFFFFFF;//Red level
-      Display_layer1[136*480+x] = 0xFFFFFFFF;//Yellow level
-      Display_layer1[196*480+x] = 0xFFFFFFFF;//Blue Level
-      Display_layer1[255*480+x] = 0xFFFFFFFF;//Black level
+      Display_layer0[16*480+x] = Display_layer1[16*480+x] = 0xFFFFFFFF;//White level
+      Display_layer0[76*480+x] = Display_layer1[76*480+x] = 0xFFFFFFFF;//Red level
+      Display_layer0[136*480+x] = Display_layer1[136*480+x] = 0xFFFFFFFF;//Yellow level
+      Display_layer0[196*480+x] = Display_layer1[196*480+x] = 0xFFFFFFFF;//Blue Level
+      Display_layer0[255*480+x] = Display_layer1[255*480+x] = 0xFFFFFFFF;//Black level
   }
-  for(y = 0; y < 32; y++)
-  {
-      tmp_color = two_colors_gradient(y/32.0f, 0xDF, 0xDF, 0xDF, 0x9F, 0x9F, 0x9F);
-      for(x = 0; x < 64; x++)
-      {
-          Button_Layout[y*64+x] = tmp_color;
-      }
-  }
+//  for(y = 0; y < 32; y++)
+//  {
+//      tmp_color = two_colors_gradient(y/32.0f, 0xDF, 0xDF, 0xDF, 0x9F, 0x9F, 0x9F);
+//      for(x = 0; x < 64; x++)
+//      {
+//          Button_Layout[y*64+x] = tmp_color;
+//      }
+//  }
   //wait_ms(200);
   
   LeptonSync();
   LEPTON_CS_LOW();
+	wait_ms(190);
+	LeptonSync();
   while(HAL_SPI_Receive_DMA(&hspi2, (uint8_t *) Lepton_VoSPI, 164) != HAL_OK);
+	LEPTON_CS_LOW();
   //for(x = 0; x < 5; x++)
   //  drawButton(410, 24+48*x);
   /* USER CODE END 2 */
@@ -204,9 +205,17 @@ int main(void)
         BufferStatus[0] = BUFFER_BUSY_DISP;
         GenerateDisplayBuffer(0, next_buffer);
         if(next_buffer == 0)
-            HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
+				{
+					  __HAL_LTDC_LAYER_ENABLE(&hltdc, 0);
+					  __HAL_LTDC_LAYER_DISABLE(&hltdc, 1);
+            //HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
+				}
         else
-            HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
+				{
+					  __HAL_LTDC_LAYER_ENABLE(&hltdc, 1);
+					  __HAL_LTDC_LAYER_DISABLE(&hltdc, 0);
+            //HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
+				}
         BufferStatus[0] = BUFFER_FREE;
         current_buffer = next_buffer;
         next_buffer = (current_buffer + 1) % 2;
@@ -216,9 +225,17 @@ int main(void)
         BufferStatus[1] = BUFFER_BUSY_DISP;
         GenerateDisplayBuffer(1, next_buffer);
         if(next_buffer == 0)
-            HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
+				{
+					  __HAL_LTDC_LAYER_ENABLE(&hltdc, 0);
+					  __HAL_LTDC_LAYER_DISABLE(&hltdc, 1);
+            //HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer0, 0);
+				}
         else
-            HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
+				{
+					  __HAL_LTDC_LAYER_ENABLE(&hltdc, 1);
+					  __HAL_LTDC_LAYER_DISABLE(&hltdc, 0);
+            //HAL_LTDC_SetAddress(&hltdc, (uint32_t) Display_layer0_buffer1, 0);
+				}
         BufferStatus[1] = BUFFER_FREE;
         current_buffer = next_buffer;
         next_buffer = (current_buffer + 1) % 2;
@@ -381,18 +398,18 @@ void MX_LTDC_Init(void)
   hltdc.Init.Backcolor.Red = 0;
   HAL_LTDC_Init(&hltdc);
 
-  pLayerCfg.WindowX0 = 80;
-  pLayerCfg.WindowX1 = 399;
-  pLayerCfg.WindowY0 = 16;
-  pLayerCfg.WindowY1 = 255;
+  pLayerCfg.WindowX0 = 0;
+  pLayerCfg.WindowX1 = 479;
+  pLayerCfg.WindowY0 = 0;
+  pLayerCfg.WindowY1 = 271;
   pLayerCfg.PixelFormat = LTDC_PIXEL_FORMAT_ARGB8888;
   pLayerCfg.Alpha = 255;
   pLayerCfg.Alpha0 = 0;
   pLayerCfg.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
   pLayerCfg.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
   pLayerCfg.FBStartAdress = 0xC0000000;
-  pLayerCfg.ImageWidth = 320;
-  pLayerCfg.ImageHeight = 240;
+  pLayerCfg.ImageWidth = 480;
+  pLayerCfg.ImageHeight = 272;
   pLayerCfg.Backcolor.Blue = 0;
   pLayerCfg.Backcolor.Green = 0;
   pLayerCfg.Backcolor.Red = 0;
@@ -1015,13 +1032,17 @@ void ArrayMaxMin(uint16_t * LeptonBuffer, uint16_t * min, uint16_t * max)
     }
 }
 
+/*
+Display the thermal image with an offset of (80,16) and a size of (320,240)
+Display is 480x272
+*/
 void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID)
 {
     int x, y;
     uint16_t l_min, l_max;
     float range;
     uint32_t color;
-    uint32_t * DisplayBuffer = (DisplayBufferID == 0)?Display_layer0_buffer0:Display_layer0_buffer1;
+    uint32_t * DisplayBuffer = (DisplayBufferID == 0)?Display_layer0:Display_layer1;
     ArrayMaxMin(LeptonBuffer[LeptonBufferID], &l_min, &l_max);
     range = l_max-l_min;
     for(y = 0; y < 60; y++)
@@ -1029,25 +1050,25 @@ void GenerateDisplayBuffer(uint8_t LeptonBufferID, uint8_t DisplayBufferID)
         for(x = 0; x < 80; x++)
         {
             color = gradient(((float)(LeptonBuffer[LeptonBufferID][y*80+x]-l_min))/range);
-            DisplayBuffer[(y*4)*320 + (x*4)] = color;
-            DisplayBuffer[(y*4)*320 + (x*4)+1] = color;
-            DisplayBuffer[(y*4)*320 + (x*4)+2] = color;
-            DisplayBuffer[(y*4)*320 + (x*4)+3] = color;
+            DisplayBuffer[((y*4)+16)*480 + (x*4)+80] = color;
+            DisplayBuffer[((y*4)+16)*480 + (x*4)+81] = color;
+            DisplayBuffer[((y*4)+16)*480 + (x*4)+82] = color;
+            DisplayBuffer[((y*4)+16)*480 + (x*4)+83] = color;
             
-            DisplayBuffer[((y*4)+1)*320 + (x*4)] = color;
-            DisplayBuffer[((y*4)+1)*320 + (x*4)+1] = color;
-            DisplayBuffer[((y*4)+1)*320 + (x*4)+2] = color;
-            DisplayBuffer[((y*4)+1)*320 + (x*4)+3] = color;
+            DisplayBuffer[((y*4)+17)*480 + (x*4)+80] = color;
+            DisplayBuffer[((y*4)+17)*480 + (x*4)+81] = color;
+            DisplayBuffer[((y*4)+17)*480 + (x*4)+82] = color;
+            DisplayBuffer[((y*4)+17)*480 + (x*4)+83] = color;
             
-            DisplayBuffer[((y*4)+2)*320 + (x*4)] = color;
-            DisplayBuffer[((y*4)+2)*320 + (x*4)+1] = color;
-            DisplayBuffer[((y*4)+2)*320 + (x*4)+2] = color;
-            DisplayBuffer[((y*4)+2)*320 + (x*4)+3] = color;
+            DisplayBuffer[((y*4)+18)*480 + (x*4)+80] = color;
+            DisplayBuffer[((y*4)+18)*480 + (x*4)+81] = color;
+            DisplayBuffer[((y*4)+18)*480 + (x*4)+82] = color;
+            DisplayBuffer[((y*4)+18)*480 + (x*4)+83] = color;
             
-            DisplayBuffer[((y*4)+3)*320 + (x*4)] = color;
-            DisplayBuffer[((y*4)+3)*320 + (x*4)+1] = color;
-            DisplayBuffer[((y*4)+3)*320 + (x*4)+2] = color;
-            DisplayBuffer[((y*4)+3)*320 + (x*4)+3] = color;
+            DisplayBuffer[((y*4)+19)*480 + (x*4)+80] = color;
+            DisplayBuffer[((y*4)+19)*480 + (x*4)+81] = color;
+            DisplayBuffer[((y*4)+19)*480 + (x*4)+82] = color;
+            DisplayBuffer[((y*4)+19)*480 + (x*4)+83] = color;
         }
     }
 }
@@ -1068,7 +1089,7 @@ uint32_t gradient(float percent)
         else
         {
             //Blue to yellow
-            if(percent < 0.375)
+            if(percent < 0.375f)
                 return two_colors_gradient((percent - 0.25f) * 8, 0, 0, 255, 0, 255, 0);
             else
                 return two_colors_gradient((percent - 0.375f) * 8, 0, 255, 0, 255, 255, 0);
@@ -1091,25 +1112,25 @@ uint32_t gradient(float percent)
 
 uint32_t two_colors_gradient(float percent, uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2)
 {
-    float weigthed_percent = (cos(((float)percent - 1.0f) * PI) + 1.0f) / 2.0f;
+    float weigthed_percent = (cos(((double)percent - 1.0) * PI) + 1.0f) / 2.0f;
     return RGB(255,
-        (uint8_t)(MIN(r_1, r_2) + ABS((float)r_1 - (float)r_2) * (r_1 > r_2 ? 1.0f-weigthed_percent : weigthed_percent)),
-        (uint8_t)(MIN(g_1, g_2) + ABS((float)g_1 - (float)g_2) * (g_1 > g_2 ? 1.0f-weigthed_percent : weigthed_percent)),
-        (uint8_t)(MIN(b_1, b_2) + ABS((float)b_1 - (float)b_2) * (b_1 > b_2 ? 1.0f-weigthed_percent : weigthed_percent)));
+        (uint8_t)(MIN(r_1, r_2) + ABS((float)((int32_t)r_1 - (int32_t)r_2)) * (r_1 > r_2 ? 1.0f-weigthed_percent : weigthed_percent)),
+        (uint8_t)(MIN(g_1, g_2) + ABS((float)((int32_t)g_1 - (int32_t)g_2)) * (g_1 > g_2 ? 1.0f-weigthed_percent : weigthed_percent)),
+        (uint8_t)(MIN(b_1, b_2) + ABS((float)((int32_t)b_1 - (int32_t)b_2)) * (b_1 > b_2 ? 1.0f-weigthed_percent : weigthed_percent)));
 }
 
-void drawButton(int x, int y)
-{
-    while(DMA2D->CR & 0x00000001);
-    DMA2D->FGMAR = (uint32_t) Button_Layout;
-    DMA2D->FGOR = 0;
-    DMA2D->FGPFCCR = 0xFF000000;
-    DMA2D->OPFCCR = 0x00000000;
-    DMA2D->OMAR = ((uint32_t) Display_layer1) + (y * 480 + x) * 4;
-    DMA2D->OOR = 480-64;
-    DMA2D->NLR = 64 << 16 | 32;
-    DMA2D->CR |= 1;
-}
+//void drawButton(int x, int y)
+//{
+//    while(DMA2D->CR & 0x00000001);
+//    DMA2D->FGMAR = (uint32_t) Button_Layout;
+//    DMA2D->FGOR = 0;
+//    DMA2D->FGPFCCR = 0xFF000000;
+//    DMA2D->OPFCCR = 0x00000000;
+//    DMA2D->OMAR = ((uint32_t) Display_layer1) + (y * 480 + x) * 4;
+//    DMA2D->OOR = 480-64;
+//    DMA2D->NLR = 64 << 16 | 32;
+//    DMA2D->CR |= 1;
+//}
 /* USER CODE END 4 */
 
 #ifdef USE_FULL_ASSERT

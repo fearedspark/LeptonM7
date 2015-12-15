@@ -23,11 +23,13 @@ It uses the Lepton Thermal Camera Breakout v1.3 from PURE Engineering (http://ww
 	* Improved color representation using 6 colors (Black-Blue-Green-Yellow-Red-White) instead of 3 (Blue-Yellow-Red)
 	* Added layout for buttons
 	* Added level indicator on the left of the image
+- v1.2:
+	* Changed the buffering principle to reduce SDRAM access
+	* Fixed the gradient function not working after last compiler update
 	   
 # Known issues
 
-- Sync with the camera often not happening at startup
-- Screen display unstable at times
+- Sync with the camera often not happening correclty at startup
 
 # Future work
 
